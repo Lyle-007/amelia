@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>For Amelia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffe9f1;--ink:#d6336c;--ink2:#8a2250;--hi:#ffffff;--card:#fff7fa;--line:#8a2250;--text:#3b1026;--star:#f4b3cb;--muted:#a15a79;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#1a1030;--ink:#ff6b9d;--ink2:#b03a6b;--hi:#ffffff;--card:#251547;--line:#ff6b9d;--text:#f5e6ff;--star:#3a2a6a;--muted:#b79ad6}
+}
+:root[data-theme="dark"]{--bg:#1a1030;--ink:#ff6b9d;--ink2:#b03a6b;--hi:#ffffff;--card:#251547;--line:#ff6b9d;--text:#f5e6ff;--star:#3a2a6a;--muted:#b79ad6}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;background:var(--bg);color:var(--text);
+  background-image:radial-gradient(var(--star) 2px,transparent 2px);background-size:28px 28px;
+  font-family:'VT323',ui-monospace,Menlo,Consolas,monospace;font-size:24px;line-height:1.3;
+}
+main{max-width:600px;margin:0 auto;padding:40px 16px 64px}
+#name{display:block;margin:0 auto;image-rendering:pixelated;cursor:pointer;max-width:100%}
+.hint{text-align:center;color:var(--muted);font-size:18px;margin:6px 0 36px}
+.letter{
+  border:4px solid var(--line);box-shadow:6px 6px 0 var(--line);background:var(--card);
+  padding:22px 20px;opacity:0;transform:translateY(16px);transition:opacity .9s ease,transform .9s ease;
+}
+.letter.show{opacity:1;transform:none}
+.letter h2{margin:0 0 14px;font-weight:normal;font-size:28px;color:var(--ink)}
+.letter p{margin:0 0 14px}
+.sig{margin-top:22px;color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.letter{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <canvas id="name" aria-label="Amelia"></canvas>
+  <p class="hint">tap the name to watch it again</p>
+
+  <section class="letter" id="letter">
+    <h2>A letter for you</h2>
+    <p>Hi Amelia,</p>
+    <p>I wanted to give you something you could hold, and something that felt like us at the same time. So I made you this.</p>
+    <p>I’m still figuring out how to put all of it into words, so here’s a start: you make ordinary days better, and I’m really glad it’s us.</p>
+    <p>Thank you for being you.</p>
+    <p class="sig">Love,<br>Ebaad</p>
+  </section>
+</main>
+
+<script>
+(function(){
+  var FONT={
+    A:[".###.","#...#","#...#","#####","#...#","#...#","#...#"],
+    M:["#...#","##.##","#.#.#","#...#","#...#","#...#","#...#"],
+    E:["#####","#....","#....","####.","#....","#....","#####"],
+    L:["#....","#....","#....","#....","#....","#....","#####"],
+    I:["#####","..#..","..#..","..#..","..#..","..#..","#####"]
+  };
+  var HEART=[".##.##.","#h#####","#######",".#####.","..###..","...#..."];
+  var WORD="AMELIA",COLS=44,ROWS=9,STEP=38,HSTEP=28,START_DELAY=400;
+  var pix=[],heart=[];
+
+  WORD.split("").forEach(function(ch,i){
+    for(var c=0;c<5;c++)for(var r=0;r<7;r++){
+      if(FONT[ch][r][c]==="#")pix.push({x:i*6+c,y:r+1,t:START_DELAY+pix.length*STEP});
+    }
+  });
+  var nameEnd=START_DELAY+pix.length*STEP+200;
+  for(var r=HEART.length-1;r>=0;r--)for(var c=0;c<7;c++){
+    var h=HEART[r][c];if(h==="."||!h)continue;
+    heart.push({x:37+c,y:r+1,k:h,t:nameEnd+heart.length*HSTEP});
+  }
+  var heartEnd=nameEnd+heart.length*HSTEP+300;
+
+  var cv=document.getElementById("name"),ctx=cv.getContext("2d"),letter=document.getElementById("letter");
+  var cell=8,start=performance.now(),shown=false;
+  var reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduce)start-=60000;
+
+  function size(){
+    var w=Math.min(document.querySelector("main").clientWidth-32,568);
+    cell=Math.max(4,Math.floor(w/COLS));
+    cv.width=cell*COLS;cv.height=cell*ROWS;
+    cv.style.width=cv.width+"px";cv.style.height=cv.height+"px";
+  }
+  function ease(p){var s=1.70158;p=p-1;return 1+p*p*((s+1)*p+s)}
+  function px(x,y,p,col,shade){
+    var s=cell*ease(p);if(s<=0)return;
+    var cx=x*cell+cell/2,cy=y*cell+cell/2;
+    ctx.fillStyle=shade;ctx.fillRect(cx-s/2+cell*.16,cy-s/2+cell*.16,s,s);
+    ctx.fillStyle=col;ctx.fillRect(cx-s/2,cy-s/2,s,s);
+  }
+  function frame(now){
+    var e=now-start,css=getComputedStyle(document.documentElement);
+    var ink=css.getPropertyValue("--ink").trim(),ink2=css.getPropertyValue("--ink2").trim(),hi=css.getPropertyValue("--hi").trim();
+    ctx.clearRect(0,0,cv.width,cv.height);
+    pix.forEach(function(q){
+      var p=Math.min(1,(e-q.t)/180);if(p<=0)return;
+      px(q.x,q.y,p,p<.6?hi:ink,ink2);
+    });
+    ctx.save();
+    var pulse=e>heartEnd?1+0.07*Math.sin((e-heartEnd)/210):1;
+    var hx=(37+3.5)*cell,hy=(1+3)*cell;
+    ctx.translate(hx,hy);ctx.scale(pulse,pulse);ctx.translate(-hx,-hy);
+    heart.forEach(function(q){
+      var p=Math.min(1,(e-q.t)/180);if(p<=0)return;
+      px(q.x,q.y,p,p<.6?hi:(q.k==="h"?"#ffd1dc":"#ff4d79"),"#b3203f");
+    });
+    ctx.restore();
+    if(!shown&&e>heartEnd){shown=true;letter.classList.add("show")}
+    requestAnimationFrame(frame);
+  }
+  cv.addEventListener("click",function(){start=performance.now()});
+  window.addEventListener("resize",size);
+  size();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
